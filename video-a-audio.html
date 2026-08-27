@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video a Audio · Music World</title>
+    <style>
+        :root{
+            --celeste: #4fc3ea;
+            --azul: #2f8fd8;
+            --plomo: #8b93a1;
+            --plomo-suave: #eef1f4;
+            --negro: #14171c;
+            --blanco: #ffffff;
+            --rojo: #e0555a;
+            --verde: #2ba84a;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #dfe3e8;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: var(--blanco);
+            border-radius: 22px;
+            padding: 34px;
+            max-width: 430px;
+            width: 100%;
+            box-shadow: 0 12px 30px rgba(20,23,28,.12);
+            text-align: center;
+        }
+        .volver{
+            display:inline-flex; align-items:center; gap:6px;
+            color: var(--azul); text-decoration:none; font-size:13px; font-weight:700;
+            margin-bottom: 18px;
+        }
+        .logo-icon{
+            width:48px;height:48px;border-radius:14px; margin:0 auto 12px;
+            background:linear-gradient(135deg,var(--celeste),var(--azul));
+            display:flex;align-items:center;justify-content:center; font-size:22px;
+        }
+        h1 { color: var(--negro); margin-bottom: 6px; font-size: 22px; }
+        p.subtitle { color: var(--plomo); margin-bottom: 26px; font-size: 13.5px; }
+        .drop-zone {
+            border: 2px dashed var(--celeste);
+            border-radius: 16px;
+            padding: 36px 20px;
+            cursor: pointer;
+            transition: all 0.25s;
+            background: var(--plomo-suave);
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            background: #eaf8fd;
+            border-color: var(--azul);
+        }
+        .drop-zone p { color: var(--azul); font-size: 14.5px; pointer-events: none; font-weight: 600; }
+        input[type="file"] { display: none; }
+        .btn {
+            background: linear-gradient(135deg,var(--celeste),var(--azul));
+            color: var(--blanco);
+            border: none;
+            padding: 13px 28px;
+            border-radius: 999px;
+            font-size: 14.5px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 18px;
+            transition: transform 0.2s;
+        }
+        .btn:hover { transform: translateY(-1px); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        #status {
+            margin-top: 18px;
+            font-weight: 700;
+            font-size: 13.5px;
+            min-height: 20px;
+        }
+        .success { color: var(--verde); }
+        .error { color: var(--rojo); }
+        .loading { color: var(--azul); }
+        audio { margin-top: 14px; width: 100%; }
+
+        .barra-wrap{
+            margin-top: 14px; background: var(--plomo-suave);
+            border-radius: 999px; height: 10px; overflow: hidden; display:none;
+        }
+        .barra-wrap.show{ display:block; }
+        .barra{
+            height:100%; width:0%; background:linear-gradient(135deg,var(--celeste),var(--azul));
+            transition: width .15s ease;
+        }
+        .barra-texto{ font-size:12px; color:var(--plomo); margin-top:6px; }
+
+        .acciones{ display:flex; flex-direction:column; gap:10px; margin-top:14px; }
+        .download-link {
+            display: inline-block;
+            padding: 12px 24px;
+            background: var(--negro);
+            color: var(--blanco);
+            text-decoration: none;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 13.5px;
+        }
+        .add-app-link{
+            display: inline-flex;
+            align-items:center; justify-content:center; gap:6px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg,var(--celeste),var(--azul));
+            color: var(--blanco);
+            border:none;
+            text-decoration: none;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 13.5px;
+            cursor:pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="app.html" class="volver">← Volver a Music World</a>
+        <div class="logo-icon">🎬</div>
+        <h1>Video a Audio</h1>
+        <p class="subtitle">Convertí cualquier video a MP3. La conversión se hace en la nube, así que funciona rápido incluso con datos móviles.</p>
+
+        <div class="drop-zone" id="dropZone">
+            <p>📁 Arrastrá un video aquí<br>o tocá para seleccionar</p>
+        </div>
+        <input type="file" id="fileInput" accept="video/*">
+
+        <div id="status"></div>
+        <div class="barra-wrap" id="barraWrap">
+            <div class="barra" id="barra"></div>
+        </div>
+        <div class="barra-texto" id="barraTexto"></div>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const CLOUD_NAME = "lbtti7uw";
+        const UPLOAD_PRESET = "ml_default";
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const status = document.getElementById('status');
+        const result = document.getElementById('result');
+        const barraWrap = document.getElementById('barraWrap');
+        const barra = document.getElementById('barra');
+        const barraTexto = document.getElementById('barraTexto');
+
+        let ultimoBlob = null;
+        let ultimoNombre = "";
+
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+        function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+        });
+        dropZone.addEventListener('drop', (e) => handleFile(e.dataTransfer.files[0]), false);
+        fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]), false);
+
+        function mostrarBarra(pct){
+            barraWrap.classList.add('show');
+            barra.style.width = Math.min(100, Math.max(0, pct)) + '%';
+        }
+        function ocultarBarra(){
+            barraWrap.classList.remove('show');
+            barra.style.width = '0%';
+            barraTexto.textContent = '';
+        }
+
+        function subirVideoConProgreso(file){
+            return new Promise((resolve, reject) => {
+                const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`;
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("upload_preset", UPLOAD_PRESET);
+
+                const xhr = new XMLHttpRequest();
+                xhr.open("POST", url);
+                xhr.upload.addEventListener("progress", (e) => {
+                    if (e.lengthComputable) {
+                        const pct = Math.round((e.loaded / e.total) * 100);
+                        mostrarBarra(pct);
+                        barraTexto.textContent = 'Subiendo... ' + pct + '%';
+                    }
+                });
+                xhr.onload = () => {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        try { resolve(JSON.parse(xhr.responseText)); }
+                        catch(err){ reject(new Error("Respuesta inválida del servidor")); }
+                    } else {
+                        let msg = "Error subiendo el video (" + xhr.status + ")";
+                        try { msg = JSON.parse(xhr.responseText)?.error?.message || msg; } catch(e){}
+                        reject(new Error(msg));
+                    }
+                };
+                xhr.onerror = () => reject(new Error("Falló la conexión al subir el video"));
+                xhr.send(formData);
+            });
+        }
+
+        async function handleFile(file) {
+            if (!file) return;
+            if (!file.type.startsWith('video/')) {
+                status.innerHTML = '<span class="error">❌ Por favor seleccioná un archivo de video válido</span>';
+                return;
+            }
+            if (file.size > 100 * 1024 * 1024) {
+                status.innerHTML = '<span class="error">❌ El video no puede pesar más de 100 MB</span>';
+                return;
+            }
+
+            result.innerHTML = '';
+            ocultarBarra();
+            dropZone.style.pointerEvents = 'none';
+
+            try {
+                status.innerHTML = '<span class="loading">⏳ Subiendo tu video...</span>';
+                mostrarBarra(0);
+                barraTexto.textContent = 'Subiendo... 0%';
+
+                const nombreBase = file.name.replace(/\.[^/.]+$/, '');
+                const subida = await subirVideoConProgreso(file);
+
+                ocultarBarra();
+                status.innerHTML = '<span class="loading">⏳ Generando el audio...</span>';
+
+                // Cloudinary sirve el audio del video con solo pedir el mismo archivo en formato mp3
+                const urlAudio = subida.secure_url.replace(/\.[a-zA-Z0-9]+($|\?)/, '.mp3$1');
+
+                const resAudio = await fetch(urlAudio);
+                if (!resAudio.ok) throw new Error("No se pudo generar el audio a partir del video");
+                const audioBlob = await resAudio.blob();
+
+                ultimoBlob = audioBlob;
+                ultimoNombre = nombreBase;
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const fileName = nombreBase + '.mp3';
+
+                status.innerHTML = '<span class="success">✅ ¡Conversión completada!</span>';
+
+                result.innerHTML = `
+                    <audio controls src="${audioUrl}"></audio>
+                    <div class="acciones">
+                        <a href="${audioUrl}" download="${fileName}" class="download-link">⬇️ Descargar MP3</a>
+                        <button class="add-app-link" id="btnAgregarApp">➕ Añadir a Music World</button>
+                    </div>
+                `;
+                document.getElementById('btnAgregarApp').addEventListener('click', agregarAMusicWorld);
+            } catch (err) {
+                console.error(err);
+                ocultarBarra();
+                status.innerHTML = '<span class="error">❌ Error: ' + err.message + '</span>';
+            } finally {
+                dropZone.style.pointerEvents = 'auto';
+            }
+        }
+
+        function agregarAMusicWorld(){
+            if (!ultimoBlob) return;
+            const btn = document.getElementById('btnAgregarApp');
+            btn.disabled = true;
+            btn.textContent = 'Preparando...';
+
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    localStorage.setItem('mw_audio_convertido', JSON.stringify({
+                        nombre: ultimoNombre,
+                        dataUrl: reader.result
+                    }));
+                    window.location.href = 'app.html';
+                } catch (err) {
+                    btn.disabled = false;
+                    btn.textContent = '➕ Añadir a Music World';
+                    status.innerHTML = '<span class="error">❌ El audio es muy pesado para enviarlo automáticamente. Descargalo y subilo manualmente.</span>';
+                }
+            };
+            reader.readAsDataURL(ultimoBlob);
+        }
+    </script>
+</body>
+</html>
