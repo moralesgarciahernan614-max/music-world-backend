@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Music World</title>
+<style>
+  :root{
+    --celeste: #4fc3ea;
+    --azul: #2f8fd8;
+    --plomo: #8b93a1;
+    --plomo-suave: #eef1f4;
+    --negro: #14171c;
+    --blanco: #ffffff;
+    --rojo: #e0555a;
+    --verde: #2ba84a;
+  }
+  *{box-sizing:border-box;}
+  html, body{margin:0; width:100%; overflow-x:hidden;}
+  body{
+    background:#dfe3e8;
+    font-family:'Segoe UI', system-ui, sans-serif;
+    display:flex; flex-direction:column; align-items:center;
+    padding:0 0 20px;
+  }
+  .app{
+    width:100%; max-width:430px;
+    background:var(--blanco);
+    min-height:100vh;
+    position:relative;
+    padding-bottom:78px;
+  }
+
+  /* Topbar */
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 18px 10px;
+  }
+  .brand{display:flex; align-items:center; gap:10px;}
+  .brand .logo-icon{
+    width:38px;height:38px;border-radius:11px;
+    background:linear-gradient(135deg,var(--celeste),var(--azul));
+    display:flex;align-items:center;justify-content:center;
+  }
+  .brand span{font-weight:800; font-size:21px; color:var(--negro);}
+  .brand span b{color:var(--azul);}
+  .bell{
+    position:relative;
+    width:38px;height:38px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--plomo-suave); color:var(--negro); cursor:pointer;
+  }
+  .bell-dropdown{
+    display:none; position:absolute; top:52px; right:0;
+    width:230px; background:var(--blanco); border:1px solid var(--plomo-suave);
+    border-radius:12px; box-shadow:0 12px 30px rgba(0,0,0,.15); padding:14px; z-index:50;
+    font-size:13px; color:var(--plomo); text-align:center;
+  }
+  .bell-dropdown.show{display:block;}
+
+  /* Search */
+  .search-wrap{padding:4px 18px 12px;}
+  .search{
+    display:flex; align-items:center; gap:10px;
+    background:var(--plomo-suave); border-radius:14px;
+    padding:12px 14px; color:var(--plomo);
+  }
+  .search input{
+    border:none; background:transparent; outline:none;
+    font-size:14px; width:100%; color:var(--negro);
+  }
+
+  /* Banner */
+  .banner{
+    margin:0 18px 14px; padding:14px; border-radius:14px;
+    background:linear-gradient(135deg,#fff4e0,#ffe9d0);
+    border:1px solid #ffd9a8; font-size:13px; color:#7a4a10;
+    display:none; align-items:center; gap:10px; justify-content:space-between;
+  }
+  .banner.show{display:flex;}
+  .banner button{
+    flex-shrink:0; border:none; background:var(--negro); color:#fff;
+    padding:8px 12px; border-radius:9px; font-size:12.5px; font-weight:600;
+  }
+
+  /* Categories */
+  .categories{
+    display:flex; gap:8px; padding:0 18px 14px; overflow-x:auto; scrollbar-width:none;
+  }
+  .categories::-webkit-scrollbar{display:none;}
+  .chip{
+    flex-shrink:0; padding:9px 15px; border-radius:999px; font-size:13px;
+    background:var(--plomo-suave); color:var(--negro); white-space:nowrap; cursor:pointer;
+    border:1.5px solid transparent;
+  }
+  .chip.active{background:var(--celeste); color:#fff; font-weight:700;}
+
+  .section-label{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:6px 18px 8px; font-size:12px; text-transform:uppercase;
+    letter-spacing:1px; color:var(--plomo); font-weight:700;
+  }
+  .section-label span.verTodo{color:var(--azul); text-transform:none; letter-spacing:0; cursor:pointer; font-weight:700;}
+
+  /* Feed */
+  .feed{padding:0 18px 8px; display:flex; flex-direction:column; gap:10px;}
+  .empty{
+    text-align:center; color:var(--plomo); font-size:13.5px; padding:40px 20px; line-height:1.6;
+  }
+  .track{
+    display:flex; align-items:center; gap:12px;
+    background:var(--blanco); border:1px solid var(--plomo-suave); border-radius:16px; padding:10px;
+  }
+  .cover{
+    width:52px;height:52px;border-radius:12px;flex-shrink:0;
+    background-size:cover; background-position:center;
+    display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;
+  }
+  .meta{flex:1; min-width:0;}
+  .meta .name{font-size:14.5px; font-weight:700; color:var(--negro); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .meta .user{font-size:12px; color:var(--plomo); margin-top:1px;}
+  .stats{display:flex; align-items:center; gap:10px; margin-top:5px; color:var(--plomo); font-size:11.5px;}
+  .fav-heart{cursor:pointer; display:flex; align-items:center; gap:3px;}
+  .fav-heart.active{color:var(--rojo); font-weight:700;}
+  .actions{display:flex; align-items:center; gap:8px; flex-shrink:0;}
+  .play{
+    width:38px;height:38px;border-radius:50%;
+    background:var(--azul); display:flex;align-items:center;justify-content:center;
+    flex-shrink:0; cursor:pointer; color:#fff;
+  }
+  .play.playing{background:var(--rojo);}
+
+  .loadmore{
+    margin:8px 18px 18px; text-align:center; padding:12px;
+    border-radius:14px; border:1.5px dashed var(--plomo-suave); color:var(--plomo);
+    font-size:13px; cursor:pointer;
+  }
+
+  /* Bottom nav */
+  .navbar{
+    position:fixed; bottom:0; left:50%; transform:translateX(-50%);
+    width:100%; max-width:430px;
+    display:flex; justify-content:space-around; align-items:center;
+    padding:10px 8px calc(10px + env(safe-area-inset-bottom));
+    background:var(--blanco); border-top:1px solid var(--plomo-suave); z-index:40;
+  }
+  .navitem{
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    color:var(--plomo); font-size:10.5px; cursor:pointer; background:none; border:none;
+  }
+  .navitem.active{color:var(--azul); font-weight:700;}
+  .navitem .fab{
+    width:46px;height:46px;border-radius:50%;
+    background:linear-gradient(135deg,var(--celeste),var(--azul));
+    display:flex;align-items:center;justify-content:center; margin-top:-26px;
+    box-shadow:0 8px 18px rgba(47,143,216,.4); color:#fff;
+  }
+
+  .view{display:none;}
+  .view.show{display:block;}
+
+  /* Profile */
+  .profile-head{
+    display:flex; flex-direction:column; align-items:center; padding:30px 20px 20px;
+    background:linear-gradient(180deg,var(--celeste),#eaf8fd);
+  }
+  .avatar{
+    width:74px;height:74px;border-radius:50%; background:var(--negro); color:#fff;
+    display:flex;align-items:center;justify-content:center; font-size:28px; font-weight:800; margin-bottom:10px;
+    background-size:cover; background-position:center; overflow:hidden;
+  }
+  .profile-head h2{margin:0; color:var(--negro); font-size:18px;}
+  .profile-head p{margin:2px 0 0; color:#3a4a55; font-size:13px;}
+  .btn-editar-perfil{
+    margin-top:12px; padding:9px 18px; border-radius:999px; border:1.5px solid var(--negro);
+    background:transparent; color:var(--negro); font-size:12.5px; font-weight:700; cursor:pointer;
+  }
+  .profile-stats{display:flex; gap:26px; padding:20px; justify-content:center;}
+  .profile-stats div{text-align:center;}
+  .profile-stats b{display:block; font-size:18px; color:var(--negro);}
+  .profile-stats span{font-size:11.5px; color:var(--plomo);}
+
+  .btn-borrar{
+    width:32px;height:32px;border-radius:50%; background:#fdecec; color:var(--rojo);
+    display:flex;align-items:center;justify-content:center; flex-shrink:0; cursor:pointer; font-size:14px;
+  }
+
+  /* Modal subir audio */
+  .overlay{
+    display:none; position:fixed; inset:0; background:rgba(20,23,28,.55); z-index:100;
+    align-items:flex-end; justify-content:center;
+  }
+  .overlay.show{display:flex;}
+  .modal{
+    width:100%; max-width:430px; background:#fff; border-radius:22px 22px 0 0;
+    padding:20px 20px 26px; max-height:88vh; overflow-y:auto;
+  }
+  .modal h3{margin:0 0 16px; font-size:18px; color:var(--negro);}
+  .modal .label{font-size:12px; color:var(--plomo); font-weight:700; margin-bottom:6px; text-transform:uppercase;}
+  .modal input[type=text]{
+    width:100%; padding:12px 14px; border-radius:12px; border:1.5px solid var(--plomo-suave);
+    background:var(--plomo-suave); font-size:14px; margin-bottom:16px; color:var(--negro);
+  }
+  .file-box{
+    border:1.5px dashed var(--plomo); border-radius:14px; padding:16px; text-align:center;
+    font-size:13px; color:var(--plomo); margin-bottom:16px; cursor:pointer; position:relative;
+  }
+  .file-box input{position:absolute; inset:0; opacity:0; cursor:pointer;}
+  .file-box.filled{border-color:var(--celeste); color:var(--azul); font-weight:600;}
+  .cat-select{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px;}
+  .cat-btn{
+    padding:9px 14px; border-radius:999px; border:1.5px solid var(--plomo-suave);
+    background:#fff; color:var(--negro); font-size:12.5px; cursor:pointer;
+  }
+  .cat-btn.selected{background:var(--celeste); border-color:var(--celeste); color:#fff; font-weight:700;}
+  .btn-submit{
+    width:100%; padding:14px; border-radius:12px; border:none;
+    background:var(--negro); color:#fff; font-weight:700; font-size:15px;
+  }
+  .btn-submit:disabled{opacity:.6;}
+  .close-modal{
+    position:absolute; top:14px; right:16px; background:var(--plomo-suave);
+    width:30px;height:30px;border-radius:50%; display:flex;align-items:center;justify-content:center;
+    color:var(--negro); font-size:16px; cursor:pointer;
+  }
+  .modal-msg{text-align:center; font-size:13px; min-height:18px; margin-top:-6px; margin-bottom:8px;}
+
+  audio{display:none;}
+
+  /* ---------- Auth (login / registro) ---------- */
+  .authscreen{
+    position:fixed; inset:0; background:#dfe3e8; z-index:200;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .authscreen.hide{display:none;}
+  .authbox{
+    width:100%; max-width:380px; background:#fff; border-radius:20px; padding:28px 24px;
+    box-shadow:0 12px 30px rgba(0,0,0,.12);
+  }
+  .authtabs{display:flex; gap:6px; margin-bottom:18px; background:var(--plomo-suave); border-radius:12px; padding:4px;}
+  .authtab{flex:1; border:none; background:transparent; padding:10px; border-radius:9px; font-size:13.5px; font-weight:700; color:var(--plomo); cursor:pointer;}
+  .authtab.active{background:#fff; color:var(--negro); box-shadow:0 2px 6px rgba(0,0,0,.08);}
+  .authbox input[type=text], .authbox input[type=password], .authbox input[type=email]{
+    width:100%; padding:12px 14px; border-radius:12px; border:1.5px solid var(--plomo-suave);
+    background:var(--plomo-suave); font-size:14px; margin-bottom:14px; color:var(--negro);
+  }
+  .auth-divider{display:flex; align-items:center; gap:10px; margin:16px 0; color:var(--plomo); font-size:12px;}
+  .auth-divider::before, .auth-divider::after{content:""; flex:1; height:1px; background:var(--plomo-suave);}
+  .btn-google{
+    width:100%; padding:13px; border-radius:12px; border:1.5px solid var(--plomo-suave);
+    background:#fff; color:var(--negro); font-weight:700; font-size:14px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn-google:disabled{opacity:.6;}
+</style>
+</head>
+<body>
+
+<!-- ==================== PANTALLA DE INICIO DE SESIÓN ==================== -->
+<div class="authscreen" id="authScreen">
+  <div class="authbox">
+    <div class="brand" style="justify-content:center; margin-bottom:20px;">
+      <div class="logo-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M3 14v-2a9 9 0 0 1 18 0v2"/><rect x="1.5" y="14" width="5" height="7" rx="2"/><rect x="17.5" y="14" width="5" height="7" rx="2"/></svg>
+      </div>
+      <span>Music <b>World</b></span>
+    </div>
+
+    <div class="authtabs">
+      <button class="authtab active" id="tabLogin">Iniciar sesión</button>
+      <button class="authtab" id="tabRegistro">Crear cuenta</button>
+    </div>
+
+    <div class="modal-msg" id="authMsg"></div>
+
+    <div class="label" id="labelNombreAuth" style="display:none;">Tu nombre</div>
+    <input type="text" id="authNombre" placeholder="Ej: Hernán" style="display:none;">
+
+    <div class="label">Correo</div>
+    <input type="text" id="authEmail" placeholder="tu@correo.com">
+
+    <div class="label">Contraseña</div>
+    <input type="password" id="authPass" placeholder="Mínimo 6 caracteres">
+
+    <button class="btn-submit" id="btnAuthSubmit">Iniciar sesión</button>
+
+    <div class="auth-divider"><span>o</span></div>
+
+    <button class="btn-google" id="btnGoogle">Continuar con Google</button>
+  </div>
+</div>
+
+<div class="app" id="appRoot" style="display:none;">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M3 14v-2a9 9 0 0 1 18 0v2"/><rect x="1.5" y="14" width="5" height="7" rx="2"/><rect x="17.5" y="14" width="5" height="7" rx="2"/></svg>
+      </div>
+      <span>Music <b>World</b></span>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <div id="monedasBadge" style="display:flex; align-items:center; gap:5px; background:#fff4d6; color:#8a6a00; padding:7px 12px; border-radius:999px; font-size:13px; font-weight:700;">
+        🪙 <span id="monedasNum">0</span>
+      </div>
+      <a href="video-a-audio.html" id="btnConvertidor" title="Convertir un video a audio" style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--plomo-suave);color:var(--negro);text-decoration:none;font-size:16px;">🎬</a>
+      <div style="position:relative;">
+        <div class="bell" id="bellBtn">
+          🔔
+          <div class="bell-dropdown" id="bellDropdown">Todavía no tenés notificaciones.<br>Pronto vas a poder enterarte cuando suban audios en tus categorías favoritas.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== VISTA INICIO ==================== -->
+  <div class="view show" id="view-inicio">
+    <div class="search-wrap">
+      <div class="search">
+        🔍 <input type="text" id="buscadorInicio" placeholder="Buscar audios, voces, efectos...">
+      </div>
+    </div>
+
+    <div class="banner" id="banner">
+      <span>🎧 Este sitio es gratis gracias a la comunidad. Subí un audio para ayudar a que siga creciendo.</span>
+      <button id="bannerBtn">Subir</button>
+    </div>
+
+    <div class="categories" id="categorias"></div>
+
+    <div class="section-label">
+      <span id="labelSeccion">Tendencias</span>
+      <span class="verTodo" id="verTodo">Ver todo</span>
+    </div>
+
+    <div class="feed" id="feedInicio"></div>
+    <div class="loadmore" id="cargarMasInicio" style="display:none;">Cargar más audios ↓</div>
+  </div>
+
+  <!-- ==================== VISTA EXPLORAR ==================== -->
+  <div class="view" id="view-explorar">
+    <div class="search-wrap">
+      <div class="search">
+        🔍 <input type="text" id="buscadorExplorar" placeholder="Buscar en todo el catálogo...">
+      </div>
+    </div>
+    <div class="section-label"><span>Más populares</span></div>
+    <div class="feed" id="feedExplorar"></div>
+    <div class="loadmore" id="cargarMasExplorar" style="display:none;">Cargar más audios ↓</div>
+  </div>
+
+  <!-- ==================== VISTA FAVORITOS ==================== -->
+  <div class="view" id="view-favoritos">
+    <div class="section-label"><span>Tus favoritos</span></div>
+    <div class="feed" id="feedFavoritos"></div>
+  </div>
+
+  <!-- ==================== VISTA PERFIL ==================== -->
+  <div class="view" id="view-perfil">
+    <div class="profile-head">
+      <div class="avatar" id="avatarInicial">?</div>
+      <h2 id="perfilNombre">Invitado</h2>
+      <p id="perfilUsuario">@invitado</p>
+      <button class="btn-editar-perfil" id="btnEditarPerfil">✏️ Editar perfil</button>
+      <button class="btn-editar-perfil" id="btnCerrarSesion" style="margin-top:8px; border-color:var(--rojo); color:var(--rojo);">Cerrar sesión</button>
+    </div>
+    <div class="profile-stats">
+      <div><b id="statSubidos">0</b><span>Audios subidos</span></div>
+      <div><b id="statFavoritos">0</b><span>Favoritos</span></div>
+      <div><b id="statMonedas">0</b><span>🪙 Monedas</span></div>
+    </div>
+    <div class="section-label"><span>Tus audios subidos</span></div>
+    <div class="feed" id="feedPerfil"></div>
+  </div>
+
+  <!-- ==================== VISTA PERFIL PÚBLICO (de otros) ==================== -->
+  <div class="view" id="view-perfilpublico">
+    <div class="section-label" style="padding-top:16px;">
+      <span id="btnVolverPerfilPublico" style="cursor:pointer; color:var(--azul);">← Volver</span>
+    </div>
+    <div class="profile-head">
+      <div class="avatar" id="ppAvatar">?</div>
+      <h2 id="ppNombre">—</h2>
+      <p id="ppUsuario">@—</p>
+    </div>
+    <div class="profile-stats">
+      <div><b id="ppSubidos">0</b><span>Audios subidos</span></div>
+    </div>
+    <div class="section-label"><span>Audios de esta persona</span></div>
+    <div class="feed" id="feedPerfilPublico"></div>
+  </div>
+
+  <!-- Nav inferior -->
+  <div class="navbar">
+    <button class="navitem active" data-view="inicio">🏠<span>Inicio</span></button>
+    <button class="navitem" data-view="explorar">🔍<span>Explorar</span></button>
+    <button class="navitem" id="btnAbrirSubir"><div class="fab">+</div></button>
+    <button class="navitem" data-view="favoritos">❤️<span>Favoritos</span></button>
+    <button class="navitem" data-view="perfil">👤<span>Perfil</span></button>
+  </div>
+
+</div>
+
+<!-- Modal subir audio -->
+<div class="overlay" id="overlaySubir">
+  <div class="modal">
+    <div class="close-modal" id="cerrarModal">✕</div>
+    <h3>Subir audio</h3>
+
+    <div style="background:#fff4e0; border:1px solid #ffd9a8; border-radius:10px; padding:10px 12px; font-size:12px; color:#7a4a10; margin-bottom:16px; line-height:1.5;">
+      ⚠️ Subí solo audios propios, creados por vos, o libres de derechos. No subas canciones ni contenido de otros artistas sin permiso.
+    </div>
+
+    <div class="label">Archivo de audio</div>
+    <div class="file-box" id="fileBoxAudio">
+      <span id="fileBoxAudioTexto">Tocá para elegir un archivo (MP3, WAV, M4A)</span>
+      <input type="file" id="inputAudio" accept="audio/*">
+    </div>
+    <div style="font-size:11.5px; color:var(--plomo); margin:-10px 0 16px;">
+      ¿Tenés un video y necesitás solo el audio? Usá nuestro <a href="video-a-audio.html" style="color:var(--azul); font-weight:700;">convertidor de video a audio 🎬</a>.
+    </div>
+
+    <div class="label">Nombre del audio</div>
+    <input type="text" id="inputNombreAudio" placeholder="Ej: Efecto de aplausos">
+
+    <div class="label">Categoría (elegí 1 o 2)</div>
+    <div class="cat-select" id="catSelect"></div>
+
+    <div class="label">Portada (opcional)</div>
+    <div class="file-box" id="fileBoxImg">
+      <span id="fileBoxImgTexto">Tocá para elegir una imagen pequeña</span>
+      <input type="file" id="inputImg" accept="image/*">
+    </div>
+
+    <div class="modal-msg" id="modalMsg"></div>
+    <button class="btn-submit" id="btnSubirAudio">Subir audio</button>
+  </div>
+</div>
+
+<!-- Modal editar perfil -->
+<div class="overlay" id="overlayPerfil">
+  <div class="modal">
+    <div class="close-modal" id="cerrarModalPerfil">✕</div>
+    <h3>Editar perfil</h3>
+
+    <div class="label">Foto de perfil (opcional)</div>
+    <div class="file-box" id="fileBoxFoto">
+      <span id="fileBoxFotoTexto">Tocá para elegir una foto</span>
+      <input type="file" id="inputFoto" accept="image/*">
+    </div>
+
+    <div class="label">Nombre</div>
+    <input type="text" id="inputEditNombre" placeholder="Tu nombre">
+
+    <div class="label">Nombre de usuario</div>
+    <input type="text" id="inputEditUsername" placeholder="ej: hernan_music">
+
+    <div class="modal-msg" id="modalMsgPerfil"></div>
+    <button class="btn-submit" id="btnGuardarPerfil">Guardar cambios</button>
+  </div>
+</div>
+
+<audio id="reproductor"></audio>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, getDoc, setDoc, query, where, orderBy, limit, updateDoc, deleteDoc, doc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyC0bVs0YhrwMxsPdCxzbhWh5EWUG5TT52A",
+    authDomain: "music-world-58f1e.firebaseapp.com",
+    projectId: "music-world-58f1e",
+    storageBucket: "music-world-58f1e.firebasestorage.app",
+    messagingSenderId: "104697343040",
+    appId: "1:104697343040:web:31d4875a710ca01d1943a5"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  const CLOUD_NAME = "lbtti7uw";
+  const UPLOAD_PRESET = "ml_default";
+
+  const CATEGORIAS = [
+    { id: "musica", label: "🎵 Música" },
+    { id: "voces", label: "🎙️ Voces" },
+    { id: "efectos", label: "🔊 Efectos" },
+    { id: "ambientes", label: "🌧️ Ambientes" },
+    { id: "memes", label: "😂 Memes" }
+  ];
+  const CHIPS = [{ id: "tendencias", label: "🔥 Tendencias" }, ...CATEGORIAS];
+  const COLORES = ["#4fc3ea","#8b7cf6","#ff9d6c","#57c98b","#e05a8f","#5aa7e0"];
+
+  let allAudios = [];      // cache completa cargada de Firestore
+  let categoriaActiva = "tendencias";
+  let visiblesInicio = 4;
+  let visiblesExplorar = 4;
+  let audioActualId = null;
+
+  // deviceId viejo (sistema anterior sin cuentas) — se usa solo una vez para migrar
+  // los audios y el perfil de este dispositivo a la cuenta con la que se loguee.
+  const oldDeviceId = localStorage.getItem("mw_deviceId") || null;
+
+  let uid = null;              // id de la cuenta logueada (Firebase Auth)
+  let nombreUsuario = "";
+  let usernameGuardado = "";
+  let fotoPerfil = "";
+  const favoritos = JSON.parse(localStorage.getItem("mw_favoritos") || "[]");
+  let monedas = 0;
+
+  async function migrarDatosViejos(uidNuevo){
+    if (!oldDeviceId) return;
+    const flag = "mw_migrado_" + uidNuevo;
+    if (localStorage.getItem(flag)) return;
+    try {
+      const snapViejo = await getDoc(doc(db,"perfiles",oldDeviceId));
+      if (snapViejo.exists()) {
+        await setDoc(doc(db,"perfiles",uidNuevo), snapViejo.data(), { merge: true });
+      }
+      const q = query(collection(db,"audios"), where("ownerId","==", oldDeviceId));
+      const snapAudios = await getDocs(q);
+      await Promise.all(snapAudios.docs.map(d => updateDoc(doc(db,"audios",d.id), { ownerId: uidNuevo })));
+    } catch(err){ console.error("Error migrando datos viejos:", err); }
+    localStorage.setItem(flag, "true");
+  }
+
+  async function cargarPerfilUsuario(){
+    try {
+      const snap = await getDoc(doc(db,"perfiles",uid));
+      const u = auth.currentUser;
+      if (snap.exists()) {
+        const d = snap.data();
+        nombreUsuario = d.nombre || u.displayName || (u.email ? u.email.split("@")[0] : "Usuario");
+        usernameGuardado = d.username || "";
+        fotoPerfil = d.fotoUrl || u.photoURL || "";
+        monedas = typeof d.monedas === "number" ? d.monedas : 0;
+      } else {
+        nombreUsuario = u.displayName || (u.email ? u.email.split("@")[0] : "Usuario");
+        usernameGuardado = "";
+        fotoPerfil = u.photoURL || "";
+        monedas = 0;
+        await setDoc(doc(db,"perfiles",uid), { nombre: nombreUsuario, monedas: 0 }, { merge: true });
+      }
+    } catch(err){ console.error("Error cargando perfil:", err); }
+    actualizarMonedasUI();
+  }
+  function actualizarMonedasUI(){
+    const badge = document.getElementById("monedasNum");
+    if (badge) badge.textContent = monedas;
+    const perfilBadge = document.getElementById("statMonedas");
+    if (perfilBadge) perfilBadge.textContent = monedas;
+  }
+  // NOTA: sumarMonedas/restarMonedas ya NO se usan — el saldo de monedas ahora
+  // lo maneja exclusivamente Cloud Functions (sumarMonedasPorSubida y descargarAudio).
+  // Se dejan solo por si necesitás referencia; podés borrarlas cuando confirmes que todo funciona.
+  async function sumarMonedas(cant){
+    monedas += cant;
+    actualizarMonedasUI();
+    try { await setDoc(doc(db,"perfiles",uid), { monedas: increment(cant) }, { merge: true }); }
+    catch(err){ console.error(err); }
+  }
+  async function restarMonedas(cant){
+    monedas -= cant;
+    actualizarMonedasUI();
+    try { await setDoc(doc(db,"perfiles",uid), { monedas: increment(-cant) }, { merge: true }); }
+    catch(err){ console.error(err); }
+  }
+
+  // ---------- Render categorías / chips ----------
+  const catContainer = document.getElementById("categorias");
+  CHIPS.forEach(c => {
+    const el = document.createElement("div");
+    el.className = "chip" + (c.id === "tendencias" ? " active" : "");
+    el.textContent = c.label;
+    el.dataset.id = c.id;
+    el.addEventListener("click", () => {
+      categoriaActiva = c.id;
+      document.querySelectorAll(".chip").forEach(x => x.classList.remove("active"));
+      el.classList.add("active");
+      document.getElementById("labelSeccion").textContent = c.id === "tendencias" ? "Tendencias" : c.label.replace(/^\S+\s/, "");
+      visiblesInicio = 4;
+      renderInicio();
+    });
+    catContainer.appendChild(el);
+  });
+
+  document.getElementById("verTodo").addEventListener("click", () => {
+    categoriaActiva = "todos";
+    document.querySelectorAll(".chip").forEach(x => x.classList.remove("active"));
+    document.getElementById("labelSeccion").textContent = "Todos los audios";
+    visiblesInicio = 4;
+    renderInicio();
+  });
+
+  // ---------- Categorías del modal de subida ----------
+  const catSelect = document.getElementById("catSelect");
+  let categoriasElegidas = [];
+  CATEGORIAS.forEach(c => {
+    const btn = document.createElement("div");
+    btn.className = "cat-btn";
+    btn.textContent = c.label;
+    btn.dataset.id = c.id;
+    btn.addEventListener("click", () => {
+      if (categoriasElegidas.includes(c.id)) {
+        categoriasElegidas = categoriasElegidas.filter(x => x !== c.id);
+        btn.classList.remove("selected");
+      } else {
+        if (categoriasElegidas.length >= 2) return;
+        categoriasElegidas.push(c.id);
+        btn.classList.add("selected");
+      }
+    });
+    catSelect.appendChild(btn);
+  });
+
+  // ---------- Utilidades ----------
+  function iniciales(nombre){
+    return nombre ? nombre.trim().charAt(0).toUpperCase() : "?";
+  }
+  function haceCuanto(fecha){
+    if (!fecha) return "recién";
+    const ms = Date.now() - fecha.getTime();
+    const min = Math.floor(ms/60000);
+    if (min < 1) return "recién";
+    if (min < 60) return `hace ${min} min`;
+    const h = Math.floor(min/60);
+    if (h < 24) return `hace ${h} h`;
+    const d = Math.floor(h/24);
+    if (d < 7) return `hace ${d} días`;
+    return `hace ${Math.floor(d/7)} sem`;
+  }
+  function colorPara(id){
+    let hash = 0;
+    for (let i=0;i<id.length;i++) hash = id.charCodeAt(i) + ((hash<<5)-hash);
+    return COLORES[Math.abs(hash) % COLORES.length];
+  }
+  function urlDescarga(url){
+    // Inserta fl_attachment para forzar la descarga real (Cloudinary ignora 'download' en links externos)
+    return url.replace("/upload/", "/upload/fl_attachment/");
+  }
+  const COSTO_DESCARGA = 5;
+  const MONEDAS_POR_SUBIR = 10;
+  async function intentarDescargar(url){
+    if (monedas < COSTO_DESCARGA) {
+      alert(`Te faltan monedas 🪙\n\nTenés ${monedas} y necesitás ${COSTO_DESCARGA} para descargar.\nSubí un audio y ganás ${MONEDAS_POR_SUBIR} monedas al instante.`);
+      return;
+    }
+    try {
+      const idToken = await auth.currentUser.getIdToken();
+      const res = await fetch("/.netlify/functions/descargar-audio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken })
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "No se pudo procesar la descarga.");
+      monedas = data.monedasRestantes;
+      actualizarMonedasUI();
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "No se pudo procesar la descarga. Probá de nuevo.");
+      return;
+    }
+    const a = document.createElement("a");
+    a.href = urlDescarga(url);
+    a.download = "";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  function tarjeta(a, permitirBorrar){
+    const esFav = favoritos.includes(a.id);
+    const cover = a.coverUrl
+      ? `background-image:url('${a.coverUrl}')`
+      : `background:${colorPara(a.categorias[0]||"x")}`;
+    const emoji = a.categorias[0] === "voces" ? "🎙️" : a.categorias[0] === "efectos" ? "🔊" : a.categorias[0] === "ambientes" ? "🌧️" : a.categorias[0] === "memes" ? "😂" : "🎵";
+    const el = document.createElement("div");
+    el.className = "track";
+    el.innerHTML = `
+      <div class="cover" style="${cover}">${a.coverUrl ? "" : emoji}</div>
+      <div class="meta">
+        <div class="name">${a.nombre}</div>
+        <div class="user" ${a.ownerId ? `data-owner="${a.ownerId}" style="cursor:pointer; text-decoration:underline; text-decoration-color:transparent;"` : ""}>${a.autor || "Anónimo"} · ${haceCuanto(a.fecha)}</div>
+        <div class="stats">
+          <span class="fav-heart ${esFav?"active":""}" data-id="${a.id}">${esFav?"❤":"🤍"} ${a.favoritos||0}</span>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="play" data-id="${a.id}" data-url="${a.url}">▶</div>
+        <div class="btn-descargar" data-url="${a.url}" title="Descargar (5 monedas)" style="background:#eaf6fb; color:var(--azul); font-size:15px; width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0; cursor:pointer;">⬇</div>
+        ${permitirBorrar ? `<div class="btn-borrar" title="Eliminar">🗑</div>` : ""}
+      </div>`;
+    el.querySelector(".fav-heart").addEventListener("click", () => toggleFavorito(a.id, el));
+    el.querySelector(".play").addEventListener("click", (e) => togglePlay(a.id, a.url, e.currentTarget));
+    el.querySelector(".btn-descargar").addEventListener("click", () => intentarDescargar(a.url));
+    if (a.ownerId) {
+      el.querySelector(".user").addEventListener("click", () => abrirPerfilPublico(a.ownerId));
+    }
+    if (permitirBorrar) {
+      el.querySelector(".btn-borrar").addEventListener("click", () => borrarAudio(a.id));
+    }
+    return el;
+  }
+
+  async function borrarAudio(id){
+    if (!confirm("¿Seguro que querés eliminar este audio? No se puede deshacer.")) return;
+    try {
+      await deleteDoc(doc(db,"audios",id));
+      allAudios = allAudios.filter(a => a.id !== id);
+      const idx = favoritos.indexOf(id);
+      if (idx !== -1) { favoritos.splice(idx,1); localStorage.setItem("mw_favoritos", JSON.stringify(favoritos)); }
+      renderTodasLasVistas();
+    } catch(err){
+      console.error(err);
+      alert("No se pudo eliminar el audio. Probá de nuevo.");
+    }
+  }
+
+  function toggleFavorito(id, el){
+    const idx = favoritos.indexOf(id);
+    const audioObj = allAudios.find(x => x.id === id);
+    if (idx === -1) {
+      favoritos.push(id);
+      updateDoc(doc(db,"audios",id), { favoritos: increment(1) }).catch(()=>{});
+      if (audioObj) audioObj.favoritos = (audioObj.favoritos||0)+1;
+    } else {
+      favoritos.splice(idx,1);
+      updateDoc(doc(db,"audios",id), { favoritos: increment(-1) }).catch(()=>{});
+      if (audioObj) audioObj.favoritos = Math.max(0,(audioObj.favoritos||1)-1);
+    }
+    localStorage.setItem("mw_favoritos", JSON.stringify(favoritos));
+    renderTodasLasVistas();
+  }
+
+  const reproductor = document.getElementById("reproductor");
+  function togglePlay(id, url, btnEl){
+    document.querySelectorAll(".play").forEach(p => { if(p!==btnEl){p.classList.remove("playing"); p.textContent="▶";} });
+    if (audioActualId === id && !reproductor.paused) {
+      reproductor.pause();
+      btnEl.classList.remove("playing"); btnEl.textContent = "▶";
+      audioActualId = null;
+      return;
+    }
+    reproductor.src = url;
+    reproductor.play().catch(()=>{ alert("No se pudo reproducir este audio."); });
+    audioActualId = id;
+    btnEl.classList.add("playing"); btnEl.textContent = "❚❚";
+  }
+  reproductor.addEventListener("ended", () => {
+    document.querySelectorAll(".play.playing").forEach(p=>{p.classList.remove("playing"); p.textContent="▶";});
+    audioActualId = null;
+  });
+
+  // ---------- Filtrado ----------
+  function filtrarPor(lista, categoria, busqueda){
+    let r = lista;
+    if (busqueda && busqueda.trim()) {
+      const q = busqueda.trim().toLowerCase();
+      r = r.filter(a => a.nombre.toLowerCase().includes(q));
+      return r.sort((a,b)=> b.fecha-a.fecha);
+    }
+    if (categoria === "tendencias") {
+      return [...r].sort((a,b)=> (b.favoritos||0)-(a.favoritos||0));
+    }
+    if (categoria === "todos") {
+      return [...r].sort((a,b)=> b.fecha-a.fecha);
+    }
+    return r.filter(a => a.categorias.includes(categoria)).sort((a,b)=> b.fecha-a.fecha);
+  }
+
+  // ---------- Render por vista ----------
+  function renderInicio(){
+    const busqueda = document.getElementById("buscadorInicio").value;
+    const lista = filtrarPor(allAudios, categoriaActiva, busqueda);
+    const cont = document.getElementById("feedInicio");
+    cont.innerHTML = "";
+    if (lista.length === 0) {
+      cont.innerHTML = `<div class="empty">Todavía no hay audios acá.<br>¡Sé el primero en subir uno! 🎧</div>`;
+      document.getElementById("cargarMasInicio").style.display = "none";
+      return;
+    }
+    lista.slice(0, visiblesInicio).forEach(a => cont.appendChild(tarjeta(a)));
+    document.getElementById("cargarMasInicio").style.display = lista.length > visiblesInicio ? "block" : "none";
+  }
+
+  function renderExplorar(){
+    const busqueda = document.getElementById("buscadorExplorar").value;
+    let lista = busqueda.trim() ? filtrarPor(allAudios,"todos",busqueda) : [...allAudios].sort((a,b)=>(b.favoritos||0)-(a.favoritos||0));
+    const cont = document.getElementById("feedExplorar");
+    cont.innerHTML = "";
+    if (lista.length === 0) {
+      cont.innerHTML = `<div class="empty">No encontramos audios.</div>`;
+      document.getElementById("cargarMasExplorar").style.display = "none";
+      return;
+    }
+    lista.slice(0, visiblesExplorar).forEach(a => cont.appendChild(tarjeta(a)));
+    document.getElementById("cargarMasExplorar").style.display = lista.length > visiblesExplorar ? "block" : "none";
+  }
+
+  function renderFavoritos(){
+    const cont = document.getElementById("feedFavoritos");
+    cont.innerHTML = "";
+    const lista = allAudios.filter(a => favoritos.includes(a.id));
+    if (lista.length === 0) {
+      cont.innerHTML = `<div class="empty">Todavía no marcaste ningún audio como favorito.<br>Tocá el corazón 🤍 en cualquier audio.</div>`;
+      return;
+    }
+    lista.forEach(a => cont.appendChild(tarjeta(a)));
+  }
+
+  function renderPerfil(){
+    const avatarEl = document.getElementById("avatarInicial");
+    if (fotoPerfil) {
+      avatarEl.style.backgroundImage = `url('${fotoPerfil}')`;
+      avatarEl.textContent = "";
+    } else {
+      avatarEl.style.backgroundImage = "";
+      avatarEl.textContent = iniciales(nombreUsuario);
+    }
+    document.getElementById("perfilNombre").textContent = nombreUsuario || "Invitado";
+    document.getElementById("perfilUsuario").textContent = "@" + (usernameGuardado || (nombreUsuario ? nombreUsuario.toLowerCase().replace(/\s+/g,"") : "invitado"));
+    const misAudios = allAudios.filter(a => a.ownerId === uid);
+    document.getElementById("statSubidos").textContent = misAudios.length;
+    document.getElementById("statFavoritos").textContent = favoritos.length;
+    const cont = document.getElementById("feedPerfil");
+    cont.innerHTML = "";
+    if (misAudios.length === 0) {
+      cont.innerHTML = `<div class="empty">Todavía no subiste ningún audio.</div>`;
+      return;
+    }
+    misAudios.forEach(a => cont.appendChild(tarjeta(a, true)));
+  }
+
+  function renderTodasLasVistas(){
+    renderInicio(); renderExplorar(); renderFavoritos(); renderPerfil();
+  }
+
+  document.getElementById("buscadorInicio").addEventListener("input", ()=>{visiblesInicio=4; renderInicio();});
+  document.getElementById("buscadorExplorar").addEventListener("input", ()=>{visiblesExplorar=4; renderExplorar();});
+  document.getElementById("cargarMasInicio").addEventListener("click", ()=>{visiblesInicio+=4; renderInicio();});
+  document.getElementById("cargarMasExplorar").addEventListener("click", ()=>{visiblesExplorar+=4; renderExplorar();});
+
+  // ---------- Navegación de pestañas ----------
+  document.querySelectorAll(".navitem[data-view]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".navitem[data-view]").forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
+      document.querySelectorAll(".view").forEach(v=>v.classList.remove("show"));
+      document.getElementById("view-"+btn.dataset.view).classList.add("show");
+    });
+  });
+
+  // ---------- Campana ----------
+  document.getElementById("bellBtn").addEventListener("click", (e)=>{
+    document.getElementById("bellDropdown").classList.toggle("show");
+    e.stopPropagation();
+  });
+  document.addEventListener("click", ()=> document.getElementById("bellDropdown").classList.remove("show"));
+
+  // ---------- Banner "subí un audio" ----------
+  const YA_SUBIO = localStorage.getItem("mw_subio") === "true";
+  if (!YA_SUBIO) document.getElementById("banner").classList.add("show");
+  document.getElementById("bannerBtn").addEventListener("click", abrirModal);
+
+  // ---------- Modal subir ----------
+  const overlay = document.getElementById("overlaySubir");
+  function abrirModal(){ overlay.classList.add("show"); }
+  function cerrarModalFn(){ overlay.classList.remove("show"); }
+  document.getElementById("btnAbrirSubir").addEventListener("click", abrirModal);
+  document.getElementById("cerrarModal").addEventListener("click", cerrarModalFn);
+
+  const inputAudio = document.getElementById("inputAudio");
+  inputAudio.addEventListener("change", () => {
+    const f = inputAudio.files[0];
+    if (!f) return;
+    if (f.type.startsWith("video/")) {
+      const irAConvertir = confirm("Este sitio es solo para audio 🎧\n\nTe llevamos al convertidor de video a audio. Ahí lo convertís y volvés acá con el audio ya listo.");
+      inputAudio.value = "";
+      document.getElementById("fileBoxAudio").classList.remove("filled");
+      document.getElementById("fileBoxAudioTexto").textContent = "Tocá para elegir un archivo (MP3, WAV, M4A)";
+      if (irAConvertir) window.location.href = "video-a-audio.html";
+      return;
+    }
+    document.getElementById("fileBoxAudio").classList.add("filled");
+    document.getElementById("fileBoxAudioTexto").textContent = "✓ " + f.name;
+  });
+
+  // ---------- Recibir audio ya convertido desde video-a-audio.html ----------
+  (function cargarAudioConvertido(){
+    const guardado = localStorage.getItem("mw_audio_convertido");
+    if (!guardado) return;
+    localStorage.removeItem("mw_audio_convertido");
+    try {
+      const { nombre, dataUrl } = JSON.parse(guardado);
+      fetch(dataUrl).then(r => r.blob()).then(blob => {
+        const archivo = new File([blob], (nombre || "audio-convertido") + ".webm", { type: blob.type || "audio/webm" });
+        const dt = new DataTransfer();
+        dt.items.add(archivo);
+        inputAudio.files = dt.files;
+        document.getElementById("fileBoxAudio").classList.add("filled");
+        document.getElementById("fileBoxAudioTexto").textContent = "✓ " + archivo.name;
+        if (nombre) document.getElementById("inputNombreAudio").value = nombre;
+        abrirModal();
+        setModalMsg("Tu video ya está convertido y cargado 🎉 Completá los datos y subilo.", "#2ba84a");
+      }).catch(err => console.error("No se pudo cargar el audio convertido:", err));
+    } catch(err) { console.error(err); }
+  })();
+  const inputImg = document.getElementById("inputImg");
+  inputImg.addEventListener("change", () => {
+    if (inputImg.files[0]) {
+      document.getElementById("fileBoxImg").classList.add("filled");
+      document.getElementById("fileBoxImgTexto").textContent = "✓ " + inputImg.files[0].name;
+    }
+  });
+
+  async function subirACloudinary(file, resourceType){
+    const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`;
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", UPLOAD_PRESET);
+    const res = await fetch(url, { method:"POST", body: formData });
+    if (!res.ok) throw new Error("Error subiendo archivo");
+    const data = await res.json();
+    return data.secure_url;
+  }
+
+  const modalMsg = document.getElementById("modalMsg");
+  function setModalMsg(t,c){ modalMsg.textContent=t; modalMsg.style.color=c; }
+
+  document.getElementById("btnSubirAudio").addEventListener("click", async () => {
+    const archivoAudio = inputAudio.files[0];
+    const nombre = document.getElementById("inputNombreAudio").value.trim();
+    const archivoImg = inputImg.files[0];
+
+    if (!archivoAudio) { setModalMsg("Elegí un archivo de audio.", "#e0555a"); return; }
+    if (!nombre) { setModalMsg("Ponele un nombre al audio.", "#e0555a"); return; }
+    if (categoriasElegidas.length === 0) { setModalMsg("Elegí al menos una categoría.", "#e0555a"); return; }
+    if (archivoAudio.size > 8*1024*1024) { setModalMsg("El audio no puede pesar más de 8 MB.", "#e0555a"); return; }
+
+    const btn = document.getElementById("btnSubirAudio");
+    btn.disabled = true; btn.textContent = "Subiendo...";
+    setModalMsg("Esto puede tardar unos segundos ⏳", "#8b93a1");
+
+    let etapaActual = "";
+    try {
+      etapaActual = "subiendo el audio";
+      const urlAudio = await subirACloudinary(archivoAudio, "video"); // Cloudinary usa 'video' para archivos de audio
+      let urlImg = null;
+      if (archivoImg) { etapaActual = "subiendo la portada"; urlImg = await subirACloudinary(archivoImg, "image"); }
+
+      etapaActual = "guardando el audio";
+      const nuevoDoc = await addDoc(collection(db,"audios"), {
+        nombre, categorias: categoriasElegidas, url: urlAudio, coverUrl: urlImg,
+        autor: nombreUsuario || "Anónimo", ownerId: uid, favoritos: 0, fecha: serverTimestamp(),
+        monedasOtorgadas: false
+      });
+
+      allAudios.unshift({ id: nuevoDoc.id, nombre, categorias:[...categoriasElegidas], url:urlAudio, coverUrl:urlImg, autor: nombreUsuario||"Anónimo", ownerId: uid, favoritos:0, fecha:new Date() });
+
+      localStorage.setItem("mw_subio","true");
+      document.getElementById("banner").classList.remove("show");
+      try {
+        const idToken = await auth.currentUser.getIdToken();
+        const res = await fetch("/.netlify/functions/subir-audio-recompensa", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken, audioId: nuevoDoc.id })
+        });
+        const data = await res.json();
+        if (data.ok) { monedas = data.monedasTotales; actualizarMonedasUI(); }
+      } catch (err) { console.error(err); }
+
+      setModalMsg(`¡Listo! Tu audio ya está publicado 🎉 +${MONEDAS_POR_SUBIR} monedas 🪙`, "#2ba84a");
+      setTimeout(() => {
+        cerrarModalFn();
+        inputAudio.value=""; inputImg.value=""; document.getElementById("inputNombreAudio").value="";
+        document.getElementById("fileBoxAudio").classList.remove("filled");
+        document.getElementById("fileBoxAudioTexto").textContent="Tocá para elegir un archivo (MP3, WAV, M4A)";
+        document.getElementById("fileBoxImg").classList.remove("filled");
+        document.getElementById("fileBoxImgTexto").textContent="Tocá para elegir una imagen pequeña";
+        categoriasElegidas = [];
+        document.querySelectorAll(".cat-btn").forEach(b=>b.classList.remove("selected"));
+        setModalMsg("","");
+        renderTodasLasVistas();
+      }, 1200);
+    } catch (err) {
+      console.error(err);
+      setModalMsg(`Error ${etapaActual}: ${err.message || err}`, "#e0555a");
+    } finally {
+      btn.disabled = false; btn.textContent = "Subir audio";
+    }
+  });
+
+  // ---------- Editar perfil ----------
+  const overlayPerfil = document.getElementById("overlayPerfil");
+  const inputFoto = document.getElementById("inputFoto");
+  const inputEditNombre = document.getElementById("inputEditNombre");
+  const inputEditUsername = document.getElementById("inputEditUsername");
+  const modalMsgPerfil = document.getElementById("modalMsgPerfil");
+  let fotoNuevaBase64 = null;
+
+  document.getElementById("btnEditarPerfil").addEventListener("click", () => {
+    inputEditNombre.value = nombreUsuario;
+    inputEditUsername.value = usernameGuardado;
+    fotoNuevaBase64 = null;
+    document.getElementById("fileBoxFotoTexto").textContent = fotoPerfil ? "✓ Ya tenés una foto — tocá para cambiarla" : "Tocá para elegir una foto";
+    document.getElementById("fileBoxFoto").classList.toggle("filled", !!fotoPerfil);
+    modalMsgPerfil.textContent = "";
+    overlayPerfil.classList.add("show");
+  });
+  document.getElementById("cerrarModalPerfil").addEventListener("click", () => overlayPerfil.classList.remove("show"));
+
+  inputFoto.addEventListener("change", () => {
+    const file = inputFoto.files[0];
+    if (!file) return;
+    if (file.size > 1.5*1024*1024) {
+      modalMsgPerfil.textContent = "La foto es muy pesada, elegí una más liviana (máx 1.5 MB).";
+      modalMsgPerfil.style.color = "#e0555a";
+      inputFoto.value = "";
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      fotoNuevaBase64 = reader.result;
+      document.getElementById("fileBoxFoto").classList.add("filled");
+      document.getElementById("fileBoxFotoTexto").textContent = "✓ " + file.name;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById("btnGuardarPerfil").addEventListener("click", async () => {
+    const nuevoNombre = inputEditNombre.value.trim();
+    const nuevoUsername = inputEditUsername.value.trim().replace(/\s+/g,"").toLowerCase();
+
+    if (!nuevoNombre) {
+      modalMsgPerfil.textContent = "Poné al menos tu nombre.";
+      modalMsgPerfil.style.color = "#e0555a";
+      return;
+    }
+
+    const btnGuardar = document.getElementById("btnGuardarPerfil");
+    btnGuardar.disabled = true; btnGuardar.textContent = "Guardando...";
+    modalMsgPerfil.textContent = "";
+
+    try {
+      let fotoUrlFinal = fotoPerfil || null;
+      const archivoFoto = inputFoto.files[0];
+      if (archivoFoto) {
+        fotoUrlFinal = await subirACloudinary(archivoFoto, "image");
+      }
+
+      nombreUsuario = nuevoNombre;
+      usernameGuardado = nuevoUsername;
+      fotoPerfil = fotoUrlFinal || "";
+      localStorage.setItem("mw_nombre", nombreUsuario);
+      localStorage.setItem("mw_username", usernameGuardado);
+      if (fotoUrlFinal) localStorage.setItem("mw_foto", fotoUrlFinal);
+
+      await setDoc(doc(db,"perfiles",uid), {
+        nombre: nombreUsuario, username: usernameGuardado, fotoUrl: fotoUrlFinal || null
+      }, { merge: true });
+
+      overlayPerfil.classList.remove("show");
+      renderPerfil();
+    } catch(err){
+      console.error(err);
+      modalMsgPerfil.textContent = "Hubo un error guardando. Probá de nuevo.";
+      modalMsgPerfil.style.color = "#e0555a";
+    } finally {
+      btnGuardar.disabled = false; btnGuardar.textContent = "Guardar cambios";
+    }
+  });
+
+  // ---------- Perfil público (de otros usuarios) ----------
+  let vistaAnterior = "inicio";
+  async function abrirPerfilPublico(ownerId){
+    const activa = document.querySelector(".view.show");
+    if (activa) vistaAnterior = activa.id.replace("view-","");
+
+    document.querySelectorAll(".view").forEach(v=>v.classList.remove("show"));
+    document.getElementById("view-perfilpublico").classList.add("show");
+    document.querySelectorAll(".navitem[data-view]").forEach(b=>b.classList.remove("active"));
+
+    if (ownerId === uid) {
+      // es mi propio perfil: reutilizo mis datos locales
+      document.getElementById("ppNombre").textContent = nombreUsuario || "Invitado";
+      document.getElementById("ppUsuario").textContent = "@" + (usernameGuardado || "invitado");
+      const av = document.getElementById("ppAvatar");
+      if (fotoPerfil) { av.style.backgroundImage = `url('${fotoPerfil}')`; av.textContent=""; }
+      else { av.style.backgroundImage = ""; av.textContent = iniciales(nombreUsuario); }
+    } else {
+      document.getElementById("ppNombre").textContent = "Cargando...";
+      document.getElementById("ppUsuario").textContent = "";
+      try {
+        const snap = await getDoc(doc(db,"perfiles",ownerId));
+        const av = document.getElementById("ppAvatar");
+        if (snap.exists()) {
+          const p = snap.data();
+          document.getElementById("ppNombre").textContent = p.nombre || "Usuario";
+          document.getElementById("ppUsuario").textContent = "@" + (p.username || "usuario");
+          if (p.fotoUrl) { av.style.backgroundImage = `url('${p.fotoUrl}')`; av.textContent=""; }
+          else { av.style.backgroundImage = ""; av.textContent = iniciales(p.nombre||"?"); }
+        } else {
+          const audioDeEste = allAudios.find(a => a.ownerId === ownerId);
+          document.getElementById("ppNombre").textContent = audioDeEste ? audioDeEste.autor : "Usuario";
+          document.getElementById("ppUsuario").textContent = "@usuario";
+          av.style.backgroundImage = "";
+          av.textContent = iniciales(audioDeEste ? audioDeEste.autor : "?");
+        }
+      } catch(err){ console.error(err); }
+    }
+
+    const misAudios = allAudios.filter(a => a.ownerId === ownerId);
+    document.getElementById("ppSubidos").textContent = misAudios.length;
+    const cont = document.getElementById("feedPerfilPublico");
+    cont.innerHTML = "";
+    if (misAudios.length === 0) {
+      cont.innerHTML = `<div class="empty">Esta persona todavía no subió audios.</div>`;
+    } else {
+      misAudios.forEach(a => cont.appendChild(tarjeta(a, false)));
+    }
+  }
+
+  document.getElementById("btnVolverPerfilPublico").addEventListener("click", () => {
+    document.querySelectorAll(".view").forEach(v=>v.classList.remove("show"));
+    document.getElementById("view-"+vistaAnterior).classList.add("show");
+    document.querySelectorAll(".navitem[data-view]").forEach(b=>{
+      b.classList.toggle("active", b.dataset.view === vistaAnterior);
+    });
+  });
+
+  // ---------- Carga inicial desde Firestore ----------
+  async function cargarAudios(){
+    try {
+      const q = query(collection(db,"audios"), orderBy("fecha","desc"), limit(200));
+      const snap = await getDocs(q);
+      allAudios = snap.docs.map(d => {
+        const data = d.data();
+        return {
+          id: d.id, nombre: data.nombre, categorias: data.categorias||[],
+          url: data.url, coverUrl: data.coverUrl||null, autor: data.autor||"Anónimo",
+          ownerId: data.ownerId || null,
+          favoritos: data.favoritos||0,
+          fecha: data.fecha && data.fecha.toDate ? data.fecha.toDate() : new Date()
+        };
+      });
+    } catch(err){
+      console.error("Error cargando audios:", err);
+    }
+    renderTodasLasVistas();
+  }
+
+  // ---------- Autenticación (login / registro / cuenta) ----------
+  const authScreen = document.getElementById("authScreen");
+  const appRoot = document.getElementById("appRoot");
+  const tabLogin = document.getElementById("tabLogin");
+  const tabRegistro = document.getElementById("tabRegistro");
+  const labelNombreAuth = document.getElementById("labelNombreAuth");
+  const inputNombreAuth = document.getElementById("authNombre");
+  const inputEmailAuth = document.getElementById("authEmail");
+  const inputPassAuth = document.getElementById("authPass");
+  const btnAuthSubmit = document.getElementById("btnAuthSubmit");
+  const btnGoogle = document.getElementById("btnGoogle");
+  const authMsg = document.getElementById("authMsg");
+  let modoAuth = "login";
+
+  function setModoAuth(m){
+    modoAuth = m;
+    tabLogin.classList.toggle("active", m === "login");
+    tabRegistro.classList.toggle("active", m === "registro");
+    const esRegistro = m === "registro";
+    labelNombreAuth.style.display = esRegistro ? "block" : "none";
+    inputNombreAuth.style.display = esRegistro ? "block" : "none";
+    btnAuthSubmit.textContent = esRegistro ? "Crear cuenta" : "Iniciar sesión";
+    authMsg.textContent = "";
+  }
+  tabLogin.addEventListener("click", () => setModoAuth("login"));
+  tabRegistro.addEventListener("click", () => setModoAuth("registro"));
+
+  function mensajeErrorAuth(code){
+    const map = {
+      "auth/email-already-in-use": "Ese correo ya tiene una cuenta. Iniciá sesión.",
+      "auth/invalid-email": "El correo no es válido.",
+      "auth/weak-password": "La contraseña es muy débil.",
+      "auth/user-not-found": "No existe una cuenta con ese correo.",
+      "auth/wrong-password": "Contraseña incorrecta.",
+      "auth/invalid-credential": "Correo o contraseña incorrectos.",
+      "auth/popup-closed-by-user": "Se cerró la ventana de Google antes de terminar.",
+      "auth/operation-not-allowed": "Este método de inicio de sesión no está activado todavía en Firebase (Authentication → Sign-in method).",
+      "auth/unauthorized-domain": "Este dominio no está autorizado en Firebase (Authentication → Settings → Authorized domains).",
+      "auth/network-request-failed": "Falló la conexión. Revisá tu internet e intentá de nuevo."
+    };
+    return map[code] || ("Ocurrió un error (" + (code || "desconocido") + "). Probá de nuevo.");
+  }
+
+  btnAuthSubmit.addEventListener("click", async () => {
+    const email = inputEmailAuth.value.trim();
+    const pass = inputPassAuth.value;
+    const nombre = inputNombreAuth.value.trim();
+
+    if (!email || !pass) { authMsg.style.color = "#e0555a"; authMsg.textContent = "Completá correo y contraseña."; return; }
+    if (pass.length < 6) { authMsg.style.color = "#e0555a"; authMsg.textContent = "La contraseña debe tener al menos 6 caracteres."; return; }
+    if (modoAuth === "registro" && !nombre) { authMsg.style.color = "#e0555a"; authMsg.textContent = "Poné tu nombre."; return; }
+
+    btnAuthSubmit.disabled = true;
+    authMsg.style.color = "#8b93a1";
+    authMsg.textContent = "Un momento...";
+    try {
+      if (modoAuth === "registro") {
+        const cred = await createUserWithEmailAndPassword(auth, email, pass);
+        await updateProfile(cred.user, { displayName: nombre });
+      } else {
+        await signInWithEmailAndPassword(auth, email, pass);
+      }
+    } catch(err){
+      console.error(err);
+      authMsg.style.color = "#e0555a";
+      authMsg.textContent = mensajeErrorAuth(err.code);
+    } finally {
+      btnAuthSubmit.disabled = false;
+    }
+  });
+
+  btnGoogle.addEventListener("click", async () => {
+    btnGoogle.disabled = true;
+    try {
+      await signInWithPopup(auth, new GoogleAuthProvider());
+    } catch(err){
+      console.error(err);
+      authMsg.style.color = "#e0555a";
+      authMsg.textContent = mensajeErrorAuth(err.code);
+    } finally {
+      btnGoogle.disabled = false;
+    }
+  });
+
+  document.getElementById("btnCerrarSesion").addEventListener("click", () => {
+    if (confirm("¿Cerrar sesión?")) signOut(auth);
+  });
+
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      uid = user.uid;
+      authScreen.classList.add("hide");
+      appRoot.style.display = "block";
+      await migrarDatosViejos(uid);
+      await cargarPerfilUsuario();
+      await cargarAudios();
+    } else {
+      uid = null;
+      appRoot.style.display = "none";
+      authScreen.classList.remove("hide");
+      inputEmailAuth.value = ""; inputPassAuth.value = ""; inputNombreAuth.value = "";
+    }
+  });
+</script>
+
+</body>
+</html>
