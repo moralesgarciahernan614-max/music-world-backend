@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://visionary-monstera-329cfa.netlify.app/sitemap.xml
