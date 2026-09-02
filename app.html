@@ -465,7 +465,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getFirestore, collection, addDoc, getDocs, getDoc, setDoc, query, where, orderBy, limit, updateDoc, deleteDoc, doc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-  import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithRedirect, getRedirectResult, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyC0bVs0YhrwMxsPdCxzbhWh5EWUG5TT52A",
@@ -551,9 +551,6 @@
     const perfilBadge = document.getElementById("statMonedas");
     if (perfilBadge) perfilBadge.textContent = monedas;
   }
-  // NOTA: sumarMonedas/restarMonedas ya NO se usan — el saldo de monedas ahora
-  // lo maneja exclusivamente Cloud Functions (sumarMonedasPorSubida y descargarAudio).
-  // Se dejan solo por si necesitás referencia; podés borrarlas cuando confirmes que todo funciona.
   async function sumarMonedas(cant){
     monedas += cant;
     actualizarMonedasUI();
@@ -639,29 +636,14 @@
     // Inserta fl_attachment para forzar la descarga real (Cloudinary ignora 'download' en links externos)
     return url.replace("/upload/", "/upload/fl_attachment/");
   }
-  const COSTO_DESCARGA = 5;
+  const COSTO_DESCARGA = 2;
   const MONEDAS_POR_SUBIR = 10;
   async function intentarDescargar(url){
     if (monedas < COSTO_DESCARGA) {
       alert(`Te faltan monedas 🪙\n\nTenés ${monedas} y necesitás ${COSTO_DESCARGA} para descargar.\nSubí un audio y ganás ${MONEDAS_POR_SUBIR} monedas al instante.`);
       return;
     }
-    try {
-      const idToken = await auth.currentUser.getIdToken();
-      const res = await fetch("/.netlify/functions/descargar-audio", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken })
-      });
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error || "No se pudo procesar la descarga.");
-      monedas = data.monedasRestantes;
-      actualizarMonedasUI();
-    } catch (err) {
-      console.error(err);
-      alert(err.message || "No se pudo procesar la descarga. Probá de nuevo.");
-      return;
-    }
+    await restarMonedas(COSTO_DESCARGA);
     const a = document.createElement("a");
     a.href = urlDescarga(url);
     a.download = "";
@@ -689,7 +671,7 @@
       </div>
       <div class="actions">
         <div class="play" data-id="${a.id}" data-url="${a.url}">▶</div>
-        <div class="btn-descargar" data-url="${a.url}" title="Descargar (5 monedas)" style="background:#eaf6fb; color:var(--azul); font-size:15px; width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0; cursor:pointer;">⬇</div>
+        <div class="btn-descargar" data-url="${a.url}" title="Descargar (2 monedas)" style="background:#eaf6fb; color:var(--azul); font-size:15px; width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0; cursor:pointer;">⬇</div>
         ${permitirBorrar ? `<div class="btn-borrar" title="Eliminar">🗑</div>` : ""}
       </div>`;
     el.querySelector(".fav-heart").addEventListener("click", () => toggleFavorito(a.id, el));
@@ -953,24 +935,14 @@
       etapaActual = "guardando el audio";
       const nuevoDoc = await addDoc(collection(db,"audios"), {
         nombre, categorias: categoriasElegidas, url: urlAudio, coverUrl: urlImg,
-        autor: nombreUsuario || "Anónimo", ownerId: uid, favoritos: 0, fecha: serverTimestamp(),
-        monedasOtorgadas: false
+        autor: nombreUsuario || "Anónimo", ownerId: uid, favoritos: 0, fecha: serverTimestamp()
       });
 
       allAudios.unshift({ id: nuevoDoc.id, nombre, categorias:[...categoriasElegidas], url:urlAudio, coverUrl:urlImg, autor: nombreUsuario||"Anónimo", ownerId: uid, favoritos:0, fecha:new Date() });
 
       localStorage.setItem("mw_subio","true");
       document.getElementById("banner").classList.remove("show");
-      try {
-        const idToken = await auth.currentUser.getIdToken();
-        const res = await fetch("/.netlify/functions/subir-audio-recompensa", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ idToken, audioId: nuevoDoc.id })
-        });
-        const data = await res.json();
-        if (data.ok) { monedas = data.monedasTotales; actualizarMonedasUI(); }
-      } catch (err) { console.error(err); }
+      await sumarMonedas(MONEDAS_POR_SUBIR);
 
       setModalMsg(`¡Listo! Tu audio ya está publicado 🎉 +${MONEDAS_POR_SUBIR} monedas 🪙`, "#2ba84a");
       setTimeout(() => {
@@ -1226,18 +1198,24 @@
   btnGoogle.addEventListener("click", async () => {
     btnGoogle.disabled = true;
     try {
-      await signInWithPopup(auth, new GoogleAuthProvider());
+      await signInWithRedirect(auth, new GoogleAuthProvider());
+      // La página se recarga sola después de volver de Google; el resultado se procesa abajo.
     } catch(err){
       console.error(err);
       authMsg.style.color = "#e0555a";
       authMsg.textContent = mensajeErrorAuth(err.code);
-    } finally {
       btnGoogle.disabled = false;
     }
   });
 
   document.getElementById("btnCerrarSesion").addEventListener("click", () => {
     if (confirm("¿Cerrar sesión?")) signOut(auth);
+  });
+
+  getRedirectResult(auth).catch((err) => {
+    console.error("Error en el regreso de Google:", err);
+    authMsg.style.color = "#e0555a";
+    authMsg.textContent = mensajeErrorAuth(err.code);
   });
 
   onAuthStateChanged(auth, async (user) => {
